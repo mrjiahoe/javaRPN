@@ -1,3 +1,5 @@
+package javaRPN;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
@@ -5,8 +7,14 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 
-public class rpnCalc extends JFrame {
+/**
+ * A Reverse Polish Notation (RPN) calculator with a graphical user interface.
+ * This calculator supports basic arithmetic operations and maintains a calculation history.
+ */
+public class RPNCalc extends JFrame {
+	/** initialize an array list called calculationHistory*/
     private static List<String> calculationHistory = new ArrayList<>();
+    /** Keeps track of the number of calculations performed. */
     private static int calcCount = 0;
     
     private JTextField display;
@@ -14,7 +22,10 @@ public class rpnCalc extends JFrame {
     private StringBuilder currentExpression;
     private boolean clearOnNextInput;
 
-    public rpnCalc() {
+    /**
+     * Constructs a new RPNCalc instance and initializes the GUI.
+     */
+    public RPNCalc() {
         setTitle("RPN Calculator");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(800, 500);
@@ -22,6 +33,13 @@ public class rpnCalc extends JFrame {
 
         currentExpression = new StringBuilder();
 
+        initializeComponents();
+    }
+
+    /**
+     * Initializes and arranges the GUI components.
+     */
+    private void initializeComponents() {
         // Create left panel for history
         JPanel leftPanel = new JPanel(new BorderLayout());
         historyArea = new JTextArea(20, 30);
@@ -52,24 +70,27 @@ public class rpnCalc extends JFrame {
         add(rightPanel, BorderLayout.CENTER);
     }
 
+    /**
+     * Creates and returns the panel containing calculator buttons.
+     *
+     * @return JPanel containing calculator buttons
+     */
     private JPanel createButtonPanel() {
         JPanel buttonPanel = new JPanel(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.fill = GridBagConstraints.BOTH;
         gbc.weightx = 1;
         gbc.weighty = 1;
+        gbc.insets = new Insets(5, 5, 5, 5); // Add spacing between buttons
 
         String[] buttonLabels = {
-                // "(", ")", "C", "^",
-                // "7", "8", "9", "/",
-                // "4", "5", "6", "*",
-                // "1", "2", "3", "-",
-                // "0", ".", "=", "+"
-                "AC", "(",  ")", "/",
+        		"empty" ,"empty" ,"DEL",
+                "AC", 
+                 "(",  ")", "/", "empty" ,
                 "7", "8", "9", "*",
                 "4", "5", "6", "-",
                 "1", "2", "3", "+",
-                " ", "0", ".", "="
+                "._.", "0", ".", "="
         };
 
         for (int i = 0; i < buttonLabels.length; i++) {
@@ -77,11 +98,29 @@ public class rpnCalc extends JFrame {
             if (!label.isEmpty()) {
                 JButton button = new JButton(label);
                 button.setFont(new Font("Arial", Font.PLAIN, 16));
+                button.setOpaque(true);
+                button.setBorderPainted(false);
                 button.addActionListener(new ButtonClickListener());
                 gbc.gridx = i % 4;
                 gbc.gridy = i / 4;
-                if ("=".equals(label)) {
-                    button.setBackground(Color.orange);
+                button.setBackground(new Color(125, 125, 255)); // Bright red
+                button.setForeground(Color.WHITE);
+//                button.setBackground(Color.blue);
+//                button.setForeground(Color.white);
+
+//                button.setBackground(Color.blue);
+                if ("AC".equals(label)) {
+//                    button.setBackground(Color.red);
+//                    button.setForeground(Color.white);
+                	 button.setBackground(new Color(255, 87, 51)); // Bright red
+                     button.setForeground(Color.WHITE);
+                } else if (label.equals("DEL")) {
+                    button.setBackground(new Color(0, 128, 0)); // Dark green
+                    button.setForeground(Color.WHITE);
+                } else if (label.equals("empty")) {
+                	button.setOpaque(false);
+                	button.setText("");
+
                 }
                 buttonPanel.add(button, gbc);
             }
@@ -90,7 +129,15 @@ public class rpnCalc extends JFrame {
         return buttonPanel;
     }
 
+    /**
+     * ActionListener for calculator buttons.
+     */
     private class ButtonClickListener implements ActionListener {
+        /**
+         * Handles button click events.
+         *
+         * @param e the ActionEvent object
+         */
         public void actionPerformed(ActionEvent e) {
             String command = e.getActionCommand();
 
@@ -109,6 +156,10 @@ public class rpnCalc extends JFrame {
                 currentExpression = new StringBuilder();
                 display.setText("");
                 clearOnNextInput = false;
+            } else if (command.equals("DEL") && currentExpression.length() > 0) {
+                    currentExpression.deleteCharAt(currentExpression.length() - 1);
+                    display.setText(currentExpression.toString());
+                
             } else {
                 if (clearOnNextInput) {
                     currentExpression = new StringBuilder();
@@ -121,7 +172,15 @@ public class rpnCalc extends JFrame {
         }
     }
 
+    /**
+     * KeyListener for the display text field.
+     */
     private class DisplayKeyListener extends KeyAdapter {
+        /**
+         * Handles key press events in the display text field.
+         *
+         * @param e the KeyEvent object
+         */
         @Override
         public void keyPressed(KeyEvent e) {
             if (e.getKeyCode() == KeyEvent.VK_ENTER) {
@@ -139,6 +198,9 @@ public class rpnCalc extends JFrame {
         }
     }
 
+    /**
+     * Updates the history area with the latest calculations.
+     */
     private void updateHistoryArea() {
         List<String> history = getCalculationHistory();
         StringBuilder historyText = new StringBuilder();
@@ -148,6 +210,13 @@ public class rpnCalc extends JFrame {
         historyArea.setText(historyText.toString());
     }
 
+    /**
+     * Calculates the result of an infix expression.
+     *
+     * @param infixExpression the infix expression to calculate
+     * @return the result of the calculation as a String
+     * @throws IllegalArgumentException if the expression is invalid
+     */
     public static String Calculate(String infixExpression) throws IllegalArgumentException {
         String postfixExpression = infixToPostfix(infixExpression);
         double result = evaluatePostfix(postfixExpression);
@@ -155,10 +224,22 @@ public class rpnCalc extends JFrame {
         return String.valueOf(result);
     }
 
+    /**
+     * Checks if a character is a digit.
+     *
+     * @param c the character to check
+     * @return true if the character is a digit, false otherwise
+     */
     static boolean isDigit(char c) {
         return c >= '0' && c <= '9';
     }
 
+    /**
+     * Returns the precedence of an operator.
+     *
+     * @param c the operator character
+     * @return the precedence value of the operator
+     */
     static int prec(char c) {
         if (c == '^')
             return 3;
@@ -170,12 +251,24 @@ public class rpnCalc extends JFrame {
             return -1;
     }
 
+    /**
+     * Returns the associativity of an operator.
+     *
+     * @param c the operator character
+     * @return 'L' for left associative, 'R' for right associative
+     */
     static char associativity(char c) {
         if (c == '^')
             return 'R';
         return 'L';
     }
 
+    /**
+     * Converts an infix expression to postfix notation.
+     *
+     * @param s the infix expression
+     * @return the postfix expression
+     */
     private static String infixToPostfix(String s) {
         StringBuilder result = new StringBuilder();
         Stack<Character> stack = new Stack<>();
@@ -222,6 +315,12 @@ public class rpnCalc extends JFrame {
         return result.toString();
     }
 
+    /**
+     * Evaluates a postfix expression.
+     *
+     * @param postFixExp the postfix expression to evaluate
+     * @return the result of the evaluation
+     */
     private static double evaluatePostfix(String postFixExp) {
         Stack<Double> stack = new Stack<>();
 
@@ -259,7 +358,7 @@ public class rpnCalc extends JFrame {
                         stack.push(val2 * val1);
                         break;
                     case '^':
-                        stack.push( Math.pow(val2, val1));
+                        stack.push(Math.pow(val2, val1));
                         break;
                 }
             }
@@ -268,15 +367,30 @@ public class rpnCalc extends JFrame {
         return stack.pop();
     }
 
+    /**
+     * Returns the calculation history.
+     *
+     * @return a List of Strings representing the calculation history
+     */
     public static List<String> getCalculationHistory() {
         return new ArrayList<>(calculationHistory);
     }
 
+    /**
+     * Clears the calculation history.
+     */
     public void clearHistory() {
         calculationHistory.clear();
         calcCount = 0;
     }
 
+    /**
+     * Adds a calculation to the history.
+     *
+     * @param infix the infix expression
+     * @param postfix the postfix expression
+     * @param result the result of the calculation
+     */
     public static void addToHistory(String infix, String postfix, double result) {
         calcCount++;
         String calculation = String.format(
@@ -289,9 +403,14 @@ public class rpnCalc extends JFrame {
         calculationHistory.add(calculation);
     }
 
+    /**
+     * The main method to run the RPN Calculator application.
+     *
+     * @param args command line arguments (not used)
+     */
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
-            rpnCalc calc = new rpnCalc();
+            RPNCalc calc = new RPNCalc();
             calc.setVisible(true);
         });
     }
